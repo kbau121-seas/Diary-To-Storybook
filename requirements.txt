@@ -1,4 +1,9 @@
 google_cloud_aiplatform==1.70.0
 protobuf==5.28.2
-Requests==2.32.3
+requests==2.32.3
 streamlit==1.39.0
+diffusers
+transformers
+accelerate
+safetensors
+google-cloud-vision
