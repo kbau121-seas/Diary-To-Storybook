@@ -11,6 +11,7 @@ from google.cloud import vision
 from google.cloud.vision_v1 import types
 import vertexai
 from vertexai.language_models import TextGenerationModel
+from vertexai.preview.generative_models import GenerativeModel, Image
 
 google_api_credentials = None
 
@@ -93,6 +94,41 @@ def input_image(types=['png', 'jpg']):
 	st.image(file_data)
 	return True, file_data
 
+# Requests a (selfie) image from the user
+def input_selfie(types=['png', 'jpg']):
+	uploaded_file = st.file_uploader("Input Selfie", types)
+	if (uploaded_file is None):
+		return False, uploaded_file
+
+	file_data = uploaded_file.read()
+	file_size_MB = round(len(file_data) / (1024 ** 2), 1)
+
+	st.success("Upload Successful...  \nFilename: " + uploaded_file.name + "  \nFile Size: " + str(file_size_MB) + "MB")
+
+	st.image(file_data)
+	return True, file_data
+
+def describe_selfie_image(image, model_id="gemini-1.0-pro-vision"):
+	# Instantiate the Gemini Model
+	generative_multimodal_model = GenerativeModel(model_name=model_id)
+
+	# Generate the Description
+	prompt = """
+	I am blind. describe what this image looks like visually.
+	I do not need anything other context or names just pure description.
+	If its a person, be highly descriptive of facial features.
+	"""
+
+	print(image)
+
+	# Call VertexAI API
+	response = generative_multimodal_model.generate_content([prompt, image])
+
+	if response.candidates[0].content.parts[0].text:
+		return True, response.candidates[0].content.parts[0].text
+	
+	return False, ""
+
 # Runs the diary to storybook pipeline
 def run_pipeline():
 	success, client = set_google_api_credentials()
@@ -109,6 +145,11 @@ def run_pipeline():
 
 	success = predict_vertex_api_text(vertex_api_model, text)
 	if not success: return
+
+	success, selfie_image = input_selfie()
+	if not success: return
+
+	success, writer_desc_text = describe_selfie_image(vertex_api_model, image)
 
 # --- Start --- #
 
