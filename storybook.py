@@ -4,6 +4,7 @@ from tkinter import filedialog
 
 import os
 import tempfile
+import math
 
 import requests
 import google.auth
@@ -277,11 +278,22 @@ def input_text(label="Input Text"):
 
 # Displays an array of Vertex AI Images in order
 def display_vertex_images(images):
-	for image in images:
-		b_img = io.BytesIO()
-		image[0]._pil_image.save(b_img, format='PNG')
-		image_bytes = b_img.getvalue()
-		st.image(image_bytes)
+	columns = 3
+	l, m, r = st.columns(columns)
+	cols = [l, m, r]
+
+	rows = math.ceil(len(images) / columns)
+
+	for row in range(rows):
+		for col in range(columns):
+			idx = col + row * columns
+			if idx >= len(images): break
+
+			b_img = io.BytesIO()
+			images[idx][0]._pil_image.save(b_img, format='PNG')
+			image_bytes = b_img.getvalue()
+
+			cols[col].image(image_bytes)
 
 	return True
 
