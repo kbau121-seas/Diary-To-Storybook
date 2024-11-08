@@ -43,21 +43,7 @@ def set_google_api_credentials():
 
 	return True, client
 
-# Initializes a Vertex API Model
-def init_vertex_api_model(
-	project_id="cis-581-project-testing",
-	model_id="text-bison@002",
-	location="us-central1"
-	):
-	vertexai.init(project=project_id, location=location)
-
-	model = TextGenerationModel.from_pretrained(model_id)
-
-	st.success("Vertex API Model Set...  \nProject: " + project_id + "  \nModel: " + model_id + "  \nServer Location: " + location)
-
-	return True, model
-
-# Initializes a Generative Vertex AI Model
+# Initializes the Generative Vertex AI Connection
 def init_vertex_ai(
 	project_id="cis-581-project-testing",
 	location="us-central1"
@@ -68,6 +54,7 @@ def init_vertex_ai(
 
 	return True
 
+# Initializes a Generative Vertex AI Model
 def init_vertex_ai_generative_model(model_id, model_title=""):
 	model = GenerativeModel(model_id)
 
@@ -78,10 +65,11 @@ def init_vertex_ai_generative_model(model_id, model_title=""):
 
 	return (model != None), model
 
-
+# Initializes a Generative Vertex AI Text Model
 def init_vertex_ai_text_model(model_id="gemini-1.5-pro-002"):
 	return init_vertex_ai_generative_model(model_id, "Text")
 
+# Initializes a Generative Vertex AI Image Model
 def init_vertex_ai_image_model(model_id="gemini-1.0-pro-vision"):
 	return init_vertex_ai_generative_model(model_id, "Image")
 
@@ -99,6 +87,7 @@ def read_image_text(client, content):
 
 	return True, annotations[0].description
 
+# Splits multiple journal entries apart
 def parse_entries(model, text):
 	prompt = f"The following text is a collection of 1 or more journal entries.\
 		Keep the journal entries as they are, but in between each days' entry insert\
@@ -123,6 +112,7 @@ def parse_entries(model, text):
 
 	return True, entries
 
+# Describes an author's image
 def predict_author_description(model, image, name="Author"):
 	prompt = "I am blind. describe what the subject looks like visually.\
 		I only want a pure description of the SUBJECT.\
@@ -142,23 +132,7 @@ def predict_author_description(model, image, name="Author"):
 
 	return True, response.candidates[0].content.parts[0].text
 
-def predict_vertex_api_text(
-	model,
-	text,
-	parameters={
-		"temperature": 0,
-		"max_output_tokens": 256,
-		"top_p": 0.95,
-		"top_k": 40,
-		}
-	):
-	response = model.predict(text, **parameters)
-
-	st.success("Successfully summarized the input text")
-	st.markdown(response.text.replace("\n", "  \n"))
-
-	return True, response.text
-
+# Generates an image prompt based on a journal entry
 def predict_image_prompt(model, author_description, context, name="Author"):
 	prompt = "\n".join([
 		f"The author's name is: {name}",
@@ -177,6 +151,7 @@ def predict_image_prompt(model, author_description, context, name="Author"):
 
 	return True, response.candidates[0].content.parts[0].text
 
+# Generates a set of image prompts based on a journal entry
 def predict_image_prompts(model, journal_entry, author_description, min_scenes=1, max_scenes=3, name="Main Character"):
 	if min_scenes > max_scenes:
 		raise ValueError("min_scenes cannot be greater than max_scenes")
@@ -208,8 +183,6 @@ def predict_image_prompts(model, journal_entry, author_description, min_scenes=1
           \n\n{journal_entry}"
     ]
 
-	st.markdown(prompt)
-
 	prompt = "\n".join(prompt)
 
 	response = chat_session.send_message(prompt)
@@ -219,6 +192,33 @@ def predict_image_prompts(model, journal_entry, author_description, min_scenes=1
 
 	return True, response.candidates[0].content.parts[0].text
 
+def predict_all_image_prompts(model, entries, author_description, min_scenes=1, max_scenes=3, name="Main Character"):
+	prompts = []
+	for entry in entries:
+		success, entry_prompts = predict_image_prompts(model, entry, author_description, name="Author", max_scenes=2)
+
+		if not success: continue
+
+		prompts += [entry_prompts]
+
+	if len(prompts) <= 0: return False, None
+
+	split_scenes = [scene_prompts.split("<SCENE>") for scene_prompts in prompts]
+
+	scene_count = 0
+	for entry in split_scenes:
+		for scene in entry:
+			scene_count += 1
+	st.success(f"Generated {scene_count} Scenes...")
+
+	for entry in split_scenes:
+		for scene in entry:
+			st.markdown(scene)
+
+	return True, split_scenes
+
+
+# Generates an image from a prompt
 def imagen_generate_images(prompt, number_of_images=1, aspect_ratio="1:1", fast=True):
 	if fast:
 		fast_ = "imagen-3.0-fast-generate-001"
@@ -237,6 +237,7 @@ def imagen_generate_images(prompt, number_of_images=1, aspect_ratio="1:1", fast=
 
 	return response.images
 
+# Generates an image for each scene
 def predict_scene_images(scenes):
 	images = []
 	fail_count = 0
@@ -245,7 +246,7 @@ def predict_scene_images(scenes):
 		for scene in entry:
 			prompt = scene.strip()
 			if len(prompt) > 0:
-				response = imagen_generate_images(prompt, 1)
+				response = imagen_generate_images(prompt)
 				if response != []:
 					images.append(response)
 				else:
@@ -269,7 +270,13 @@ def input_image(title="Input Image", types=['png', 'jpg']):
 	st.image(file_data)
 	return True, file_data
 
-def display_images(images):
+def input_text(label="Input Text"):
+	text_box = st.text_input(label)
+
+	return text_box != None and text_box.strip() != "", text_box
+
+# Displays an array of Vertex AI Images in order
+def display_vertex_images(images):
 	for image in images:
 		b_img = io.BytesIO()
 		image[0]._pil_image.save(b_img, format='PNG')
@@ -298,35 +305,25 @@ def run_pipeline():
 	success, author_image = input_image("Author Image")
 	if not success: return
 
+	success, author_name = input_text("Author Name")
+	if not success: return
+
 	success, text = read_image_text(client, journal_image)
 	if not success: return
 
 	success, entries = parse_entries(text_model, text)
 	if not success: return
 
-	# TODO author name
-	success, author_description = predict_author_description(image_model, author_image, "Author")
+	success, author_description = predict_author_description(image_model, author_image, author_name)
 	if not success: return
 
-	st.success(f"Generating Prompts...")
-	prompts = []
-	for entry in entries:
-		success, entry_prompts = predict_image_prompts(text_model, author_description, entry, name="Author", max_scenes=2)
-		prompts += [entry_prompts]
-
-		if not success: return
-
-	split_scenes = [scene_prompts.split("<SCENE>") for scene_prompts in prompts]
-	st.success(f"Generated {len(split_scenes)} Scenes...")
-
-	for entry in split_scenes:
-		for scene in entry:
-			st.markdown(scene)
-
-	success, images = predict_scene_images(split_scenes)
+	success, entry_prompts = predict_all_image_prompts(text_model, entries, author_description, name="Author", max_scenes=2)
 	if not success: return
 
-	success = display_images(images)
+	success, images = predict_scene_images(entry_prompts)
+	if not success: return
+
+	success = display_vertex_images(images)
 	if not success: return
 
 # --- Start --- #
