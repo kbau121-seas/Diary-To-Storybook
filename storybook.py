@@ -92,6 +92,10 @@ def edit_image_form(images, image_dir="images", format="png"):
 	if 'author_descriptions' not in st.session_state: return False
 	if 'artstyles' not in st.session_state: return False
 
+	if DEBUG:
+		for prompt in st.session_state.prompts:
+			st.success(prompt)
+
 	prompts = st.session_state.prompts
 	author_descriptions = st.session_state.author_descriptions
 	artstyles = st.session_state.artstyles
@@ -280,7 +284,7 @@ def run_pipeline():
 		success, entry_prompts = backend.predict_all_image_prompts(text_model, entries, author_description, name="Author", max_scenes=2)
 		if not success: return
 
-		success, images = backend.predict_scene_images(entry_prompts, author_description, theme=artstyle)
+		success, images, fail_idx = backend.predict_scene_images(entry_prompts, author_description, theme=artstyle)
 		if not success: return
 
 		success = save_vertex_images(images)
@@ -296,6 +300,9 @@ def run_pipeline():
 		st.session_state.prompts = [prompt.strip() for prompts in entry_prompts for prompt in prompts]
 		st.session_state.author_descriptions = [author_description.strip() for image in images]
 		st.session_state.artstyles = [artstyle for image in images]
+
+		for remove_idx in sorted(fail_idx, reverse=True):
+			del st.session_state.prompts[fail_idx]
 
 	elif 'images' not in st.session_state:
 		# Load the stored images

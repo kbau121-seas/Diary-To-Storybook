@@ -283,7 +283,10 @@ def imagen_generate_images(prompt, author_description, theme=None, effect=None, 
 # Generates an image for each scene
 def predict_scene_images(scenes, author_description, theme=None, effect=None):
 	images = []
+	fail_idx = []
 	fail_count = 0
+
+	idx = 0
 
 	for entry in scenes:
 		for scene in entry:
@@ -294,11 +297,13 @@ def predict_scene_images(scenes, author_description, theme=None, effect=None):
 					images.append(response[0])
 				else:
 					fail_count += 1
+					fail_idx.append(idx)
+				idx += 1
 
 	if DEBUG:
 		st.success(f"Generated {len(images)} images... {fail_count} Fails")
 
-	return True, images
+	return True, images, fail_idx
 
 def predict_prompt_image(prompt, author_description, theme=None, effect=None):
 	response = imagen_generate_images(prompt, author_description, theme, effect)
