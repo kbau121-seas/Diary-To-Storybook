@@ -22,6 +22,7 @@ from PIL import Image
 
 import base64
 
+DEBUG=False
 google_api_credentials = None
 
 # tested and valid themes
@@ -37,6 +38,10 @@ artstyles = {
 effects = {
     "test" : "Enlarge the subjects head 2 or 3 times for comedic effect"
 }
+
+def cleanup():
+	if google_api_credentials is not None:
+		os.unlink(google_api_credentials.name)
 
 # Initializes the operating system's Google API Credentials
 def set_google_api_credentials():
@@ -54,7 +59,8 @@ def set_google_api_credentials():
 	global google_api_credentials
 	google_api_credentials = fp
 
-	st.success("Google API Credentials Set...  \nFilename: " + uploaded_file.name)
+	if DEBUG:
+		st.success("Google API Credentials Set...  \nFilename: " + uploaded_file.name)
 
 	return True, client
 
@@ -65,7 +71,8 @@ def init_vertex_ai(
 	):
 	vertexai.init(project=project_id, location=location)
 
-	st.success(f"Vertex AI Initialized...  \nProject: {project_id}  \nServerLocation: {location}")
+	if DEBUG:
+		st.success(f"Vertex AI Initialized...  \nProject: {project_id}  \nServerLocation: {location}")
 
 	return True
 
@@ -75,7 +82,7 @@ def init_vertex_ai_generative_model(model_id, model_title=""):
 
 	if (len(model_title) > 0): model_title = model_title.strip() + " "
 
-	if (model != None):
+	if (DEBUG and model != None):
 		st.success(f"Generative Vertex AI {model_title} Model Set...  \nModel: {model_id}")
 
 	return (model != None), model
@@ -97,8 +104,9 @@ def read_image_text(client, content):
 
 	if not annotations: return False, None
 
-	st.success("Successfully read the input image")
-	st.markdown(annotations[0].description.replace("\n", "  \n"))
+	if DEBUG:
+		st.success("Successfully read the input image")
+		st.markdown(annotations[0].description.replace("\n", "  \n"))
 
 	return True, annotations[0].description
 
@@ -120,10 +128,11 @@ def parse_entries(model, text):
 	entries_count = len(entries)
 	if entries_count <= 0: return False, None
 
-	st.success(f"Successfully split {entries_count} entries")
-	for entry_idx in range(entries_count):
-		st.markdown(f"Entry #{entry_idx + 1}:")
-		st.markdown(entries[entry_idx].replace("\n", "  \n"))
+	if DEBUG:
+		st.success(f"Successfully split {entries_count} entries")
+		for entry_idx in range(entries_count):
+			st.markdown(f"Entry #{entry_idx + 1}:")
+			st.markdown(entries[entry_idx].replace("\n", "  \n"))
 
 	return True, entries
 
@@ -143,8 +152,9 @@ def predict_author_description(model, image, name="Author", prompt = None):
 	if not response.candidates: return False, None
 	if not response.candidates[0].content.parts: return False, None
 
-	st.success("Successfully described the author image...")
-	st.markdown(response.candidates[0].content.parts[0].text.replace("\n", "  \n"))
+	if DEBUG:
+		st.success("Successfully described the author image...")
+		st.markdown(response.candidates[0].content.parts[0].text.replace("\n", "  \n"))
 
 	return True, response.candidates[0].content.parts[0].text
 
@@ -225,11 +235,13 @@ def predict_all_image_prompts(model, entries, author_description, min_scenes=1, 
 	for entry in split_scenes:
 		for scene in entry:
 			scene_count += 1
-	st.success(f"Generated {scene_count} Scenes...")
 
-	for entry in split_scenes:
-		for scene in entry:
-			st.markdown(scene)
+	if DEBUG:
+		st.success(f"Generated {scene_count} Scenes...")
+
+		for entry in split_scenes:
+			for scene in entry:
+				st.markdown(scene)
 
 	return True, split_scenes
 
@@ -279,10 +291,18 @@ def predict_scene_images(scenes, author_description, theme=None, effect=None):
 			if len(prompt) > 0:
 				response = imagen_generate_images(prompt, author_description, theme, effect)
 				if response != []:
-					images.append(response)
+					images.append(response[0])
 				else:
 					fail_count += 1
 
-	st.success(f"Generated {len(images)} images... {fail_count} Fails")
+	if DEBUG:
+		st.success(f"Generated {len(images)} images... {fail_count} Fails")
 
 	return True, images
+
+def predict_prompt_image(prompt, author_description, theme=None, effect=None):
+	response = imagen_generate_images(prompt, author_description, theme, effect)
+	if response != []:
+		return True, response[0]
+	else:
+		return False, None
