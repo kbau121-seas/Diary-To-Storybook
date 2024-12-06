@@ -20,6 +20,10 @@ import base64
 DEBUG=False
 backend.DEBUG=DEBUG
 
+######################################
+# --- StreamLit Helper Functions --- #
+######################################
+
 # Requests an image from the user
 def input_image(title="Input Image", types=['png', 'jpg']):
 	uploaded_file = st.file_uploader(title, types)
@@ -60,14 +64,30 @@ def select_artstyle(default=None, key=None):
 	artstyle = artstyle.lower()
 	return True, artstyle
 
-def edit_image_form(images):
+def edit_image_form(images, image_dir="images", format="png"):
 	clicked = clickable_images(
 		images,
 		titles=["" for i in range(len(images))],
 		div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
 		img_style={"cursor":"pointer", "margin": "5px", "height": "200px"},
 	)
+	save_storybook_button()
 
+	if (clicked < 0): return False
+
+	st.image(st.session_state.images[clicked])
+
+	# Deletion
+	do_delete = wait_for_button("Delete")
+	if do_delete:
+		delete(clicked)
+		if 'images' in st.session_state: _, st.session_state.images = loadb64_images()
+		if 'prompts' in st.session_state: del st.session_state.prompts[clicked]
+		if 'author_descriptions' in st.session_state: del st.session_state.author_descriptions[clicked]
+		if 'artstyles' in st.session_state: del st.session_state.artstyles[clicked]
+		st.rerun()
+
+	# Information is preserved (edittable)
 	if 'prompts' not in st.session_state: return False
 	if 'author_descriptions' not in st.session_state: return False
 	if 'artstyles' not in st.session_state: return False
@@ -76,7 +96,6 @@ def edit_image_form(images):
 	author_descriptions = st.session_state.author_descriptions
 	artstyles = st.session_state.artstyles
 
-	if (clicked < 0): return
 	editted_prompt = st.text_area("Prompt", prompts[clicked])
 	editted_author_description = st.text_area("Author Description", author_descriptions[clicked])
 	_, editted_artstyles = select_artstyle(default=artstyles[clicked], key="edit_artstyle")
@@ -88,18 +107,49 @@ def edit_image_form(images):
 		st.session_state.artstyles[clicked] = editted_artstyles
 
 		success, new_image = backend.predict_prompt_image(editted_prompt, editted_author_description, editted_artstyles)
-		if not success: return
+		if not success: return False
 
-		save_vertex_image(new_image, clicked)
+		image_paths = get_image_paths(image_dir)
+		new_image._pil_image.save(image_paths[clicked], format=format)
 
 		new_image = base64_to_pil(vertex_image_to_base64(new_image))
 		draw_number(new_image, clicked + 1)
 
 		st.session_state.images[clicked] = f"data:image/png;base64,{pil_to_base64(new_image)}"
+		st.rerun()
 
 	return True
 
-# Image manipulation
+def save_storybook_button(label="Save", image_dir="images", cols=3):
+	if not (st.button(label)): return False
+
+	image_paths = get_image_paths(image_dir)
+	images = [Image.open(file) for file in image_paths]
+
+	cols = min(len(images), cols)
+	rows = math.ceil(len(images) / cols)
+
+	w, h = images[0].size
+	grid_w, grid_h = w * cols, h * rows
+	storybook_image = Image.new('RGB', (grid_w, grid_h))
+
+	for i, image in enumerate(images):
+		x = (i % cols) * w
+		y = (i // cols) * h
+		storybook_image.paste(image, (x, y))
+
+	file = filedialog.asksaveasfile(mode="wb", defaultextension=".png", title="Save Storybook", filetypes=[("PNG", "*.png"), ("JPEG", "*.jpg")])
+	if file:
+		storybook_image.save(file)
+	else:
+		return False
+
+	return True
+
+##############################
+# --- Image manipulation --- #
+##############################
+
 def pil_to_base64(image, format="png"):
 	buffered = io.BytesIO()
 	image.save(buffered, format=format)
@@ -114,12 +164,16 @@ def vertex_image_to_base64(image, format="png"):
 	image._pil_image.save(buffered, format=format)
 	return base64.b64encode(buffered.getvalue()).decode()
 
-def clear(image_dir):
+def clear(image_dir="images"):
 	image_paths = get_image_paths(image_dir)
 
 	for file in image_paths:
 		os.remove(file)
 	return []
+
+def delete(index, image_dir="images"):
+	image_paths = get_image_paths(image_dir)
+	os.remove(image_paths[index])
 
 def save_vertex_images(images, image_dir="images", format='png'):
 	image_dir = os.path.join(os.getcwd(), image_dir)
@@ -144,6 +198,20 @@ def save_vertex_image(image, idx, image_dir="images", format="png"):
 
 	return True
 
+def loadb64_images(image_dir="images"):
+	image_paths = get_image_paths(image_dir)
+	images = []
+
+	font = ImageFont.truetype("./arial.ttf", 90)
+	for i, file in enumerate(image_paths):
+		img = Image.open(file)
+		draw_number(img, i + 1)
+
+		encoded = pil_to_base64(img)
+		images.append(f"data:image/png;base64,{encoded}")
+
+	return True, images
+
 def get_image_paths(image_dir="images"):
 	image_dir_root = image_dir
 	image_dir = os.path.join(os.getcwd(), image_dir)
@@ -157,6 +225,11 @@ def draw_number(image, number, font_type="./arial.ttf", font_size=90):
 	font = ImageFont.truetype(font_type, font_size)
 	draw = ImageDraw.Draw(image)
 	draw.text((5, 0), str(number), (255, 255, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0))
+
+
+####################
+# --- Pipeline --- #
+####################
 
 def init_style():
 	st.markdown("""
@@ -213,41 +286,32 @@ def run_pipeline():
 		success = save_vertex_images(images)
 		if not success: return
 
+		# Draw numbers on to the images
 		images = [base64_to_pil(vertex_image_to_base64(image)) for image in images]
-
 		for i, image in enumerate(images):
 			draw_number(image, i + 1)
-
 		images = [f"data:image/png;base64,{pil_to_base64(image)}" for image in images]
+
 		st.session_state.images = images
 		st.session_state.prompts = [prompt.strip() for prompts in entry_prompts for prompt in prompts]
-		st.session_state.author_descriptions = [author_description for image in images]
+		st.session_state.author_descriptions = [author_description.strip() for image in images]
 		st.session_state.artstyles = [artstyle for image in images]
 
 	elif 'images' not in st.session_state:
 		# Load the stored images
-
-		image_paths = get_image_paths()
-		images = []
-
-		font = ImageFont.truetype("./arial.ttf", 90)
-		for i, file in enumerate(image_paths):
-			img = Image.open(file)
-			draw_number(img, i + 1)
-
-			encoded = pil_to_base64(img)
-			images.append(f"data:image/png;base64,{encoded}")
-
+		success, images = loadb64_images()
 		st.session_state.images = images
 
 	else:
 		# Access the state variable images
 		images = st.session_state.images
 
-	success = edit_image_form(images)
-	if not success: return
+	if len(images) <= 0: return
+	edit_image_form(images)
 
+#################
 # --- Start --- #
+#################
 
 init_style()
 
