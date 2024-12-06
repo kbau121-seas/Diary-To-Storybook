@@ -7,3 +7,7 @@ transformers
 accelerate
 safetensors
 google-cloud-vision
+numpy
+opencv-python
+qrcode[pil]
+matplotlib

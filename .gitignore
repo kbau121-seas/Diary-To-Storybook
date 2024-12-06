@@ -1,1 +1,4 @@
 *.json
+*.pyc
+/output_images
+/output_qr_codes
