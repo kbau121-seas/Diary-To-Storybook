@@ -101,9 +101,9 @@ def init_model_managers():
     return all_, (gemini_manager, vision_manager, image_manager)
 
 
-def init_context_manager(managers, author_fn, journal_fn, name):
+def init_context_manager(managers, author_fn, journal_fn, name, theme=None, effect=None):
     try:
-        ctx_manager = DiaryToStorybookManager(name, author_fn, journal_fn)
+        ctx_manager = DiaryToStorybookManager(name, author_fn, journal_fn, theme=theme, effect=effect)
         ctx_manager.set_managers(*managers)
     except Exception as err:
         err = str(err)
