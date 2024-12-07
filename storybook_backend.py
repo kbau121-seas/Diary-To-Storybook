@@ -44,6 +44,7 @@ artstyles = {
     "light-comic": "A dreamy scene with pastel colors and flowing lines in an impressionist style. Water color paints.",
     "poly": "A fragmented and geometric depiction of the subject, with overlapping planes and a multi-perspective approach, reminiscent of early 20th-century cubist art.",
     "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+    "none": "Photo-realistic",
 }
 
 # tested and valid effects
@@ -99,9 +100,13 @@ def init_model_managers():
     return all_, (gemini_manager, vision_manager, image_manager)
 
 
-def init_context_manager(managers, author_fn, journal_fn, name, theme=None, effect=None):
+def init_context_manager(
+    managers, author_fn, journal_fn, name, theme=None, effect=None
+):
     try:
-        ctx_manager = DiaryToStorybookManager(name, author_fn, journal_fn, theme=theme, effect=effect)
+        ctx_manager = DiaryToStorybookManager(
+            name, author_fn, journal_fn, theme=theme, effect=effect
+        )
         ctx_manager.set_managers(*managers)
     except Exception as err:
         err = str(err)
@@ -137,7 +142,7 @@ def generate_images(ctx, delay=0.1):
 
     ctx.generate_images(delay=delay)
 
-    st.success(f"Successfully generated {len(ctx.images)} images")
+    st.success(f"Successfully generated {sum([1 for img in ctx.images if img])} images")
 
     if len(ctx.image_errors) > 0:
         st.error(
