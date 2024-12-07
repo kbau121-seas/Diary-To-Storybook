@@ -9,9 +9,8 @@ import cv2
 import io
 import time
 
-from backend.utils import (
-    generated_to_b64
-)
+from backend.utils import generated_to_b64
+
 
 class GeminiManager:
     """
@@ -89,7 +88,7 @@ class GeminiManager:
 
         response = self.gemini_vision_model.generate_content([prompt, image])
         return response.candidates[0].content.parts[0].text
-    
+
     def santize_text(self, text: str):
         prompt = f"""
         The following prompt did not pass the image generation model's content moderation filters.
@@ -151,6 +150,7 @@ class VisionManager:
     def multi_image_text_detection(self, image_paths: list, im_cv=False):
         return [self.text_detection(img_path, im_cv) for img_path in image_paths]
 
+
 class ImagenManager:
     def __init__(self):
         self.model_fast = ImageGenerationModel.from_pretrained(
@@ -162,10 +162,14 @@ class ImagenManager:
 
         self.artstyles = {
             "studio-ghibli": "Studio Ghibli Anime",
-            "medieval-fantasy": "Photo-realistic Medieval Fantasy",
+            "popart": "Funky pop art style with bright colors and bold line.",
+            "underwater": "Draw this scene as if it were in the ocean, with underwater lighting and sea creatures.",
+            "drawing": "black and white pencil sketch style",
+            # "medieval-fantasy": "Photo-realistic Medieval Fantasy",
             "light-comic": "A dreamy scene with pastel colors and flowing lines in an impressionist style. Water color paints.",
             "poly": "A fragmented and geometric depiction of the subject, with overlapping planes and a multi-perspective approach, reminiscent of early 20th-century cubist art.",
-            "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+            # "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+            "none": "none",
         }
 
         self.effects = {
@@ -173,18 +177,21 @@ class ImagenManager:
         }
 
     def generate_image(
-        self, prompt: str, author_desc: str, theme=None, effect=None, fast=True, bounce=None
+        self,
+        prompt: str,
+        author_desc: str,
+        theme=None,
+        effect=None,
+        fast=True,
+        bounce=None,
     ):
         gen_prompt = [f"Description of subject: {author_desc}", prompt]
 
         if theme and theme in self.artstyles:
-            gen_prompt.append(
-                f"Draw the image in the artstyle of {self.artstyles[theme]}. This is nonegotiable.\n"
-            )
-        else:
-            gen_prompt.append(
-                f"Create this image in photo-realism. This is nonegotiable.\n"
-            )
+            if theme.lower() != "none":
+                gen_prompt.append(
+                    f"Draw the image in the artstyle of {self.artstyles[theme]}. This is nonegotiable.\n"
+                )
 
         if effect and effect in self.effects:
             gen_prompt.append(self.effects[effect])
@@ -204,15 +211,13 @@ class ImagenManager:
                 # safety_filter_level="block_some",
                 # person_generation="allow_all",
             )
-            
-            if response.images == [] and bounce:
+
+            if response.images == []:
                 raise Exception("No images generated")
         except Exception as e:
             time.sleep(1)
-            new_prompt = bounce(gen_prompt)
-            time.sleep(0.5)
             response = img_model.generate_images(
-                prompt=new_prompt,
+                prompt=prompt,
                 number_of_images=1,
                 aspect_ratio="1:1",
                 # safety_filter_level="block_some",
@@ -337,7 +342,7 @@ class DiaryToStorybookManager:
                         theme=self.theme,
                         effect=self.effect,
                         fast=fast,
-                        bounce=self.gemini_manager.santize_text
+                        bounce=self.gemini_manager.santize_text,
                     )
 
                 if res != []:
@@ -369,7 +374,7 @@ class DiaryToStorybookManager:
             theme=self.theme,
             effect=self.effect,
             fast=fast,
-            bounce=self.gemini_manager.santize_text
+            bounce=self.gemini_manager.santize_text,
         )
 
         if res != []:

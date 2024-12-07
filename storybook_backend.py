@@ -40,13 +40,15 @@ google_api_credentials = None
 # tested and valid themes
 artstyles = {
     "studio-ghibli": "Studio Ghibli Anime",
-    "medieval-fantasy": "Photo-realistic Medieval Fantasy",
+    "popart": "Funky pop art style with bright colors and bold line.",
+    "underwater": "Draw this scene as if it were a painting in the ocean, with underwater lighting.",
+    "drawing": "black and white pencil sketch style",
+    # "medieval-fantasy": "Photo-realistic Medieval Fantasy",
     "light-comic": "A dreamy scene with pastel colors and flowing lines in an impressionist style. Water color paints.",
     "poly": "A fragmented and geometric depiction of the subject, with overlapping planes and a multi-perspective approach, reminiscent of early 20th-century cubist art.",
-    "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
-    "none": "Photo-realistic",
+    # "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+    "none": "none",
 }
-
 # tested and valid effects
 effects = {"test": "Enlarge the subjects head 2 or 3 times for comedic effect"}
 
