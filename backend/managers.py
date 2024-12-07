@@ -174,6 +174,8 @@ class VisionManager:
                     f"Create this image in photo-realism. This is nonegotiable.\n"
                 )
 
+            gen_prompt.append(f"If the subject is not a person then  draw the SUBJECT in a human-like scenario. \n")
+            
             if effect and effect in self.effects:
                 gen_prompt.append(self.effects[effect])
 
