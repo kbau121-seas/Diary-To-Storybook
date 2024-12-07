@@ -380,9 +380,32 @@ class DiaryToStorybookManager:
 
         self.image_errors = image_errors
 
-    # @require_managers
-    # def regenerate_single_image(self, index, fast=True):
-    #     if index < 0:
-    #         index = 0
-        
-    #     if index >= self.
+    @require_managers
+    def regenerate_single_image(self, index, prompt, fast=True):
+        if index < 0:
+            index = 0
+
+        if index >= len(self.images):
+            index = len(self.images) - 1
+
+        res, img_prompt = self.image_manager.generate_image(
+            prompt,
+            self.author_description,
+            theme=self.theme,
+            effect=self.effect,
+            fast=fast,
+        )
+
+        if res != []:
+            self.images[index] = res
+            self.image_errors = [
+                (idx, prompt) for idx, prompt in self.image_errors if idx != index
+            ]
+
+        else:
+
+            for idx, prompt in self.image_errors:
+                if idx == index:
+                    self.image_errors[index] = (index, img_prompt)
+
+        self.image_prompts[index] = [img_prompt]
