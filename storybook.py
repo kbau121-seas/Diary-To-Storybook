@@ -65,54 +65,76 @@ def input_text(label="Input Text"):
     return text_box != None and text_box.strip() != "", text_box
 
 def select_artstyle(default=None, key=None):
-	index = None
-	if default in list(backend.artstyles):
-		index = list(backend.artstyles).index(default)
+  index = None
+  if default in list(backend.artstyles):
+    index = list(backend.artstyles).index(default)
 
-	artstyle = st.selectbox(
-		"Art Style",
-		[style.capitalize() for style in list(backend.artstyles)],
-		index=index,
-		placeholder="Select Art Style...",
-		key=key
-	)
-	if artstyle == None: return False, None
+  artstyle = st.selectbox(
+    "Art Style",
+    [style.capitalize() for style in list(backend.artstyles)],
+    index=index,
+    placeholder="Select Art Style...",
+    key=key
+  )
+  if artstyle == None: return False, None
 
-	artstyle = artstyle.lower()
-	return True, artstyle
+  artstyle = artstyle.lower()
+  return True, artstyle
 
 def wait_for_button(label="Button"):
-	return st.button(label)
+  return st.button(label)
 
-# Displays an array of Vertex AI Images in order
-def display_vertex_images(images):
-    images = [img for img in images if img != None]
-    columns = 3
-    l, m, r = st.columns(columns)
-    cols = [l, m, r]
+def edit_image_form(ctx):
+  images = [f"data:image/png;base64,{image}" for image in ctx.images]
+  clicked = clickable_images(
+      images,
+      div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
+      img_style={"cursor":"pointer", "margin": "5px", "height": "200px"},
+    )
 
-    rows = math.ceil(len(images) / columns)
+  if clicked < 0: return False
 
-    for row in range(rows):
-        for col in range(columns):
-            idx = col + row * columns
-            if idx >= len(images):
-                break
+  st.image(images[clicked])
+  editted_prompt = st.text_area("Prompt", ctx.editable_prompts[clicked])
 
-            b_img = io.BytesIO()
-            images[idx][0]._pil_image.save(b_img, format="PNG")
-            image_bytes = b_img.getvalue()
+  do_regenerate = wait_for_button("Regenerate")
+  if do_regenerate:
+    ctx.regenerate_single_image(clicked, editted_prompt)
+    push_state(ctx)
+    st.rerun()
 
-            cols[col].image(image_bytes)
+def check_state():
+  return {
+    'images',
+    'image_prompts',
+    'editable_prompts',
+    'author_description',
+    'theme',
+    'effect'
+  }.issubset(st.session_state)
 
-    return True
+def push_state(ctx):
+  st.session_state.images = ctx.images
+  st.session_state.image_prompts = ctx.image_prompts
+  st.session_state.editable_prompts = ctx.editable_prompts
+  st.session_state.author_description = ctx.author_description
+  st.session_state.theme = ctx.theme
+  st.session_state.effect = ctx.effect
+
+def pull_state(ctx):
+  ctx.images = st.session_state.images
+  ctx.image_prompts = st.session_state.image_prompts
+  ctx.editable_prompts = st.session_state.editable_prompts
+  ctx.author_description = st.session_state.author_description
+  ctx.theme = st.session_state.theme
+  ctx.effect = st.session_state.effect
 
 def init_style():
-	st.markdown("""
-	<style>
-	div.stButton {text-align:center}
-	</style>
-	""", unsafe_allow_html=True)
+  st.markdown("""
+  <style>
+  div.stButton {text-align:center}
+  </style>
+  """, unsafe_allow_html=True)
 
 # Runs the diary to storybook pipeline
 def run_pipeline():
@@ -146,7 +168,7 @@ def run_pipeline():
     # TODO : add inputs for set theme
     success, artstyle = select_artstyle()
     if not success:
-    	  return
+        return
 
     success, ctx = backend.init_context_manager(
         (gemini_manager, vision_manager, imagen_manager),
@@ -165,23 +187,27 @@ def run_pipeline():
 
     do_generate = wait_for_button("Generate")
     if do_generate:
-    	  # Generate new images
+        # Generate new images
 
-	      success, _ = backend.generate_contexts(ctx, delay=0.1)
-	      if not success:
-	          return
+        success, _ = backend.generate_contexts(ctx, delay=0.1)
+        if not success:
+            return
 
-	      success, _ = backend.generate_images(ctx, delay=0.25)
-	      if not success:
-	          return
+        success, _ = backend.generate_images(ctx, delay=0.25)
+        if not success:
+            return
 
-    if len(ctx.images) <= 0: return
+        push_state(ctx)
 
-    success = display_vertex_images(ctx.images)
-    if not success:
-	    return
+    if not check_state(): return
 
-	  # TODO : Modify indidivual images as needed
+    if len(st.session_state.images) <= 0: return
+    pull_state(ctx)
+
+    # TODO : Modify indidivual images as needed
+    edit_image_form(ctx)
+
+    return
 
     success, (url, fn) = backend.save_and_upload(ctx)
     if not success:
@@ -203,4 +229,4 @@ run_pipeline()
 # Cleanup
 
 # if backend.google_api_credentials is not None:
-# 	os.unlink(backend.google_api_credentials)
+#   os.unlink(backend.google_api_credentials)

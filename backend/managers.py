@@ -9,6 +9,9 @@ import cv2
 import io
 import time
 
+from backend.utils import (
+    generated_to_b64
+)
 
 class GeminiManager:
     """
@@ -273,6 +276,7 @@ class DiaryToStorybookManager:
 
         self.split_scenes = None
         self.image_prompts = []
+        self.editable_prompts = []
         self.images = []
         self.image_errors = []
 
@@ -367,9 +371,11 @@ class DiaryToStorybookManager:
                     )
 
                 if res != []:
-                    self.images.append(res)
+                    self.images.append(generated_to_b64(res[0]))
+                    self.editable_prompts.append(prompt)
                 else:
                     self.images.append(None)
+                    self.editable_prompts.append(None)
                     image_errors.append((counter, prompt))
 
                 self.image_prompts.append(img_prompt)
@@ -397,7 +403,8 @@ class DiaryToStorybookManager:
         )
 
         if res != []:
-            self.images[index] = res
+            self.images[index] = generated_to_b64(res[0])
+            self.editable_prompts[index] = prompt
             self.image_errors = [
                 (idx, prompt) for idx, prompt in self.image_errors if idx != index
             ]

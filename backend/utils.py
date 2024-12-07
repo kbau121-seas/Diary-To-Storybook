@@ -8,6 +8,9 @@ import qrcode
 
 from matplotlib import pyplot as plt
 
+import io
+import base64
+
 
 def generate_filename(n: int = 6) -> str:
     """Generate a random string"""
@@ -110,3 +113,8 @@ def generate_qr_code(data, output_path):
     # Save the image
     img.save(output_path)
     print(f"QR code saved to {output_path}")
+
+def generated_to_b64(image, format="png"):
+    buffered = io.BytesIO()
+    image._pil_image.save(buffered, format=format)
+    return base64.b64encode(buffered.getvalue()).decode()
