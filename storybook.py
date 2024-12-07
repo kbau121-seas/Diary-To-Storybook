@@ -135,7 +135,7 @@ def run_pipeline():
     if not success:
         return
 
-    success, _ = backend.generate_images(ctx, delay=0.15)
+    success, _ = backend.generate_images(ctx, delay=0.25)
     if not success:
         return
 
