@@ -87,7 +87,7 @@ def wait_for_button(label="Button"):
 
 # Displays the storybook in a clickable interface
 def storybook_display(ctx):
-  images = [f"data:image/png;base64,{image}" for image in ctx.images]
+  images = [f"data:image/png;base64,{image}" for image in ctx.images if image is not None]
   clicked = clickable_images(
       images,
       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
@@ -98,7 +98,7 @@ def storybook_display(ctx):
 
 # Edits the [clicked] indexed image's prompt in the storybook
 def edit_image_form(ctx, clicked):
-  images = [f"data:image/png;base64,{image}" for image in ctx.images]
+  images = [f"data:image/png;base64,{image}" for image in ctx.images if image is not None]
 
   if clicked < 0: return False
 
