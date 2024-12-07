@@ -352,7 +352,7 @@ class DiaryToStorybookManager:
         ]
 
     @require_managers
-    def generate_images(self, delay=0, fast=True, limit=12):
+    def generate_images(self, delay=0, fast=True, limit=24):
         counter = 0
         image_errors = []
 

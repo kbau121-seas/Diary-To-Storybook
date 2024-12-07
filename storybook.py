@@ -87,7 +87,7 @@ def wait_for_button(label="Button"):
 
 # Displays the storybook in a clickable interface
 def storybook_display(ctx):
-  images = [f"data:image/png;base64,{image}" for image in ctx.images]
+  images = [f"data:image/png;base64,{image}" for image in ctx.images if image is not None]
   clicked = clickable_images(
       images,
       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
@@ -206,7 +206,7 @@ def run_pipeline():
         if not success:
             return
 
-        success, _ = backend.generate_images(ctx, delay=0.25)
+        success, _ = backend.generate_images(ctx, delay=1)
         if not success:
             return
 
