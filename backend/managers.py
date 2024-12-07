@@ -369,6 +369,7 @@ class DiaryToStorybookManager:
                 if res != []:
                     self.images.append(res)
                 else:
+                    self.images.append(None)
                     image_errors.append((counter, prompt))
 
                 self.image_prompts.append(img_prompt)
@@ -378,3 +379,10 @@ class DiaryToStorybookManager:
             counter += 1
 
         self.image_errors = image_errors
+
+    # @require_managers
+    # def regenerate_single_image(self, index, fast=True):
+    #     if index < 0:
+    #         index = 0
+        
+    #     if index >= self.

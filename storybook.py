@@ -65,6 +65,7 @@ def input_text(label="Input Text"):
 
 # Displays an array of Vertex AI Images in order
 def display_vertex_images(images):
+    images = [img for img in images if img != None]
     columns = 3
     l, m, r = st.columns(columns)
     cols = [l, m, r]
