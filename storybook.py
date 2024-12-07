@@ -1,6 +1,8 @@
 import storybook_backend as backend
 
 import streamlit as st
+from st_clickable_images import clickable_images
+
 import tkinter as tk
 from tkinter import filedialog
 
@@ -62,6 +64,25 @@ def input_text(label="Input Text"):
 
     return text_box != None and text_box.strip() != "", text_box
 
+def select_artstyle(default=None, key=None):
+	index = None
+	if default in list(backend.artstyles):
+		index = list(backend.artstyles).index(default)
+
+	artstyle = st.selectbox(
+		"Art Style",
+		[style.capitalize() for style in list(backend.artstyles)],
+		index=index,
+		placeholder="Select Art Style...",
+		key=key
+	)
+	if artstyle == None: return False, None
+
+	artstyle = artstyle.lower()
+	return True, artstyle
+
+def wait_for_button(label="Button"):
+	return st.button(label)
 
 # Displays an array of Vertex AI Images in order
 def display_vertex_images(images):
@@ -86,6 +107,12 @@ def display_vertex_images(images):
 
     return True
 
+def init_style():
+	st.markdown("""
+	<style>
+	div.stButton {text-align:center}
+	</style>
+	""", unsafe_allow_html=True)
 
 # Runs the diary to storybook pipeline
 def run_pipeline():
@@ -116,35 +143,45 @@ def run_pipeline():
     if not success:
         return
 
+    # TODO : add inputs for set theme
+    success, artstyle = select_artstyle()
+    if not success:
+    	  return
+
     success, ctx = backend.init_context_manager(
         (gemini_manager, vision_manager, imagen_manager),
         author_image,
         journal_image,
         author_name,
+        theme=artstyle
     )
     if not success:
         return
-
-    # TODO : add inputs for set theme
 
     # TODO : add inputs for set effects
 
     # TODO : add slider (between 1 and 3-4?) to allow for # of images
     # generated per daily entry
 
-    success, _ = backend.generate_contexts(ctx, delay=0.1)
-    if not success:
-        return
+    do_generate = wait_for_button("Generate")
+    if do_generate:
+    	  # Generate new images
 
-    success, _ = backend.generate_images(ctx, delay=0.25)
-    if not success:
-        return
+	      success, _ = backend.generate_contexts(ctx, delay=0.1)
+	      if not success:
+	          return
+
+	      success, _ = backend.generate_images(ctx, delay=0.25)
+	      if not success:
+	          return
+
+    if len(ctx.images) <= 0: return
 
     success = display_vertex_images(ctx.images)
     if not success:
-        return
+	    return
 
-    # TODO : Modify indidivual images as needed
+	  # TODO : Modify indidivual images as needed
 
     success, (url, fn) = backend.save_and_upload(ctx)
     if not success:
@@ -156,6 +193,8 @@ def run_pipeline():
 
 
 # --- Start --- #
+
+init_style()
 
 st.title("Diary to Storybook")
 
