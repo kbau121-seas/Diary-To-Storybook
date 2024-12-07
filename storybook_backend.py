@@ -27,11 +27,24 @@ google_api_credentials = None
 
 # tested and valid themes
 artstyles = {
+<<<<<<< Updated upstream
 	"studio-ghibli" : "Studio Ghibli Anime",
     "medieval-fantasy" : "Photo-realistic Medieval Fantasy",
     "light-comic" : "A dreamy scene with pastel colors and flowing lines in an impressionist style. Water color paints.",
     "poly": "A fragmented and geometric depiction of the subject, with overlapping planes and a multi-perspective approach, reminiscent of early 20th-century cubist art.",
     "cyberpunk" : "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+=======
+    "studio-ghibli": "Studio Ghibli Anime",
+    "light-comic": "A dreamy scene with pastel colors and flowing lines in an impressionist style. Water color paints.",
+    "poly": "A fragmented and geometric depiction of the subject, with overlapping planes and a multi-perspective approach, reminiscent of early 20th-century cubist art.",
+    "watercolor": "A soft and flowing watercolor painting with a dreamy and ethereal quality. Whimsical and light colors.",
+    "oil-painting": "A rich and textured oil painting with deep colors and a realistic style. Thick brush strokes and a sense of depth.",
+    "sketch": "A quick and loose pencil sketch with minimal detail and shading. A simple and expressive style.",
+    
+    # "medieval-fantasy": "Photo-realistic Medieval Fantasy",
+    # "cyberpunk": "Photo-realistic, futuristic and neon-lit scene with dark tones, glowing accents, and a blend of gritty urban decay and advanced technology. Sometimes there are robots and other futuristic devices and buildings.",
+    # "none": "Photo-realistic",
+>>>>>>> Stashed changes
 }
 
 # tested and valid effects
