@@ -11,6 +11,12 @@ from matplotlib import pyplot as plt
 import io
 import base64
 
+from PIL import (
+    Image,
+    ImageFont,
+    ImageDraw
+)
+
 
 def generate_filename(n: int = 6) -> str:
     """Generate a random string"""
@@ -44,12 +50,8 @@ def standard_image(images, cols=3, save_path=None):
             axes[i].axis("off")
             continue
 
-        generated_image = img_wrapper[
-            0
-        ]  # Assuming each item in `images` is a list with one `GeneratedImage`
-
-        # Get PIL image from vertex res
-        img = generated_image._pil_image
+        # Get PIL image from base64 image
+        img = b64_to_pil(img_wrapper)
 
         # Display the image
         axes[i].imshow(img)
@@ -118,3 +120,7 @@ def generated_to_b64(image, format="png"):
     buffered = io.BytesIO()
     image._pil_image.save(buffered, format=format)
     return base64.b64encode(buffered.getvalue()).decode()
+
+def b64_to_pil(encoded):
+    data = base64.b64decode(encoded)
+    return Image.open(io.BytesIO(data))

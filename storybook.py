@@ -64,6 +64,7 @@ def input_text(label="Input Text"):
 
     return text_box != None and text_box.strip() != "", text_box
 
+# Selects an available theme (defined by backend.artstyles)
 def select_artstyle(default=None, key=None):
   index = None
   if default in list(backend.artstyles):
@@ -84,13 +85,20 @@ def select_artstyle(default=None, key=None):
 def wait_for_button(label="Button"):
   return st.button(label)
 
-def edit_image_form(ctx):
+# Displays the storybook in a clickable interface
+def storybook_display(ctx):
   images = [f"data:image/png;base64,{image}" for image in ctx.images]
   clicked = clickable_images(
       images,
       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
       img_style={"cursor":"pointer", "margin": "5px", "height": "200px"},
     )
+
+  return True, clicked
+
+# Edits the [clicked] indexed image's prompt in the storybook
+def edit_image_form(ctx, clicked):
+  images = [f"data:image/png;base64,{image}" for image in ctx.images]
 
   if clicked < 0: return False
 
@@ -103,6 +111,9 @@ def edit_image_form(ctx):
     push_state(ctx)
     st.rerun()
 
+  return True
+
+# Check that the session state has all necessary context state information
 def check_state():
   return {
     'images',
@@ -113,6 +124,7 @@ def check_state():
     'effect'
   }.issubset(st.session_state)
 
+# Push context state information to the session state
 def push_state(ctx):
   st.session_state.images = ctx.images
   st.session_state.image_prompts = ctx.image_prompts
@@ -121,6 +133,7 @@ def push_state(ctx):
   st.session_state.theme = ctx.theme
   st.session_state.effect = ctx.effect
 
+# Pull context state information to the context
 def pull_state(ctx):
   ctx.images = st.session_state.images
   ctx.image_prompts = st.session_state.image_prompts
@@ -165,7 +178,6 @@ def run_pipeline():
     if not success:
         return
 
-    # TODO : add inputs for set theme
     success, artstyle = select_artstyle()
     if not success:
         return
@@ -185,6 +197,7 @@ def run_pipeline():
     # TODO : add slider (between 1 and 3-4?) to allow for # of images
     # generated per daily entry
 
+    # Generate the initial storybook
     do_generate = wait_for_button("Generate")
     if do_generate:
         # Generate new images
@@ -204,18 +217,22 @@ def run_pipeline():
     if len(st.session_state.images) <= 0: return
     pull_state(ctx)
 
-    # TODO : Modify indidivual images as needed
-    edit_image_form(ctx)
+    # Display the current storybook
+    _, image_clicked = storybook_display(ctx)
 
-    return
+    do_save = wait_for_button("Save")
+    if do_save:
+      # Save and upload the image for sharing
+      success, (url, fn) = backend.save_and_upload(ctx)
+      if not success:
+          return
 
-    success, (url, fn) = backend.save_and_upload(ctx)
-    if not success:
-        return
-
-    success = backend.display_qr_code(url, fn)
-    if not success:
-        return
+      success = backend.display_qr_code(url, fn)
+      if not success:
+          return
+    else:
+      # Modify individual images
+      edit_image_form(ctx, image_clicked)
 
 
 # --- Start --- #
