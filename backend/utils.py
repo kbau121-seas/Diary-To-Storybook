@@ -33,6 +33,11 @@ def standard_image(images, cols=3, save_path=None):
 
     images = [img for img in images if img != None]
 
+    # Add numberings
+    images = [b64_to_pil(image) for image in images]
+    for idx, image in enumerate(images): draw_number(image, idx + 1)
+    images = [pil_to_b64(image) for image in images]
+
     # Number of columns in the grid
     num_cols = cols  # Adjust based on your preference
     num_images = len(images)
@@ -124,3 +129,13 @@ def generated_to_b64(image, format="png"):
 def b64_to_pil(encoded):
     data = base64.b64decode(encoded)
     return Image.open(io.BytesIO(data))
+
+def pil_to_b64(image, format="png"):
+    buffered = io.BytesIO()
+    image.save(buffered, format=format)
+    return base64.b64encode(buffered.getvalue()).decode()
+
+def draw_number(image, number, font_type="./arial.ttf", font_size=90):
+    font = ImageFont.truetype(font_type, font_size)
+    draw = ImageDraw.Draw(image)
+    draw.text((5, 0), str(number), (255, 255, 255), font=font, stroke_width=2, stroke_fill=(0, 0, 0))

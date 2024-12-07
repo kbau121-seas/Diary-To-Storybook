@@ -13,6 +13,12 @@ import math
 import io
 from PIL import Image
 
+from backend.utils import (
+  draw_number,
+  b64_to_pil,
+  pil_to_b64
+)
+
 import base64
 
 
@@ -87,7 +93,10 @@ def wait_for_button(label="Button"):
 
 # Displays the storybook in a clickable interface
 def storybook_display(ctx):
-  images = [f"data:image/png;base64,{image}" for image in ctx.images]
+  images = [b64_to_pil(image) for image in ctx.images]
+  for idx, image in enumerate(images): draw_number(image, idx + 1)
+
+  images = [f"data:image/png;base64,{pil_to_b64(image)}" for image in images]
   clicked = clickable_images(
       images,
       div_style={"display": "flex", "justify-content": "center", "flex-wrap": "wrap"},
