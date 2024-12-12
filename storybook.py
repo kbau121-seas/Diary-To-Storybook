@@ -98,16 +98,21 @@ def storybook_display(ctx):
 
 # Edits the [clicked] indexed image's prompt in the storybook
 def edit_image_form(ctx, clicked):
+  indices = []
+  for i, image in enumerate(ctx.images):
+    if image is not None:
+      indices.append(i)
+
   images = [f"data:image/png;base64,{image}" for image in ctx.images if image is not None]
 
   if clicked < 0: return False
 
   st.image(images[clicked])
-  editted_prompt = st.text_area("Prompt", ctx.editable_prompts[clicked])
+  editted_prompt = st.text_area("Prompt", ctx.editable_prompts[indices[clicked]])
 
   do_regenerate = wait_for_button("Regenerate")
   if do_regenerate:
-    ctx.regenerate_single_image(clicked, editted_prompt)
+    ctx.regenerate_single_image(indices[clicked], editted_prompt)
     push_state(ctx)
     st.rerun()
 

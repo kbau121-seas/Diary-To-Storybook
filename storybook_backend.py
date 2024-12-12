@@ -146,11 +146,11 @@ def generate_images(ctx, delay=0.1):
 
     st.success(f"Successfully generated {sum([1 for img in ctx.images if img])} images")
 
-    if len(ctx.image_errors) > 0:
-        st.error(
-            f"Error generating images:\n"
-            + "\n".join([f"{idx} | {prompt}" for idx, prompt in ctx.image_errors])
-        )
+#    if len(ctx.image_errors) > 0:
+#        st.error(
+#            f"Error generating images:\n"
+#            + "\n".join([f"{idx} | {prompt}" for idx, prompt in ctx.image_errors])
+#        )
 
     return True, None
 

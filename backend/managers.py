@@ -350,6 +350,7 @@ class DiaryToStorybookManager:
                     self.editable_prompts.append(prompt)
                 else:
                     self.images.append(None)
+                    self.editable_prompts.append(None)
                     image_errors.append((counter, prompt))
 
                 self.image_prompts.append(img_prompt)
